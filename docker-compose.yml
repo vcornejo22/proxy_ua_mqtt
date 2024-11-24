@@ -2,7 +2,7 @@ services:
   emqx:
     image: emqx/emqx:5.8.1
     container_name: emqx1
-      #restart: always
+    restart: always
     ports:
       - "1883:1883"    # Puerto MQTT
       - "8883:8883"    # MQTT con TLS
@@ -18,10 +18,10 @@ services:
     volumes:
       - vol-emqx-data:/opt/emqx/data
       - vol-emqx-log:/opt/emqx/log
-      - /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/emqx/emqx.conf:/opt/emqx/etc/emqx.conf
-      - /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/conf/certs/ca-mac.crt:/opt/emqx/etc/certs/ca-mac.crt
-      - /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/conf/certs/server-mac.crt:/opt/emqx/etc/certs/server-mac.crt
-      - /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/conf/certs/server-mac.key:/opt/emqx/etc/certs/server-mac.key
+      - ./emqx/emqx.conf:/opt/emqx/etc/emqx.conf
+      - ./conf/certs/ca-mac.crt:/opt/emqx/etc/certs/ca-mac.crt
+      - ./conf/certs/server-mac.crt:/opt/emqx/etc/certs/server-mac.crt
+      - ./conf/certs/server-mac.key:/opt/emqx/etc/certs/server-mac.key
 
     networks:
       emqx-bridge:
@@ -67,6 +67,7 @@ services:
   influxdb2:
     image: influxdb:2.7
     container_name: influxdb2
+    restart: always
     depends_on:
       - emqx
     ports:
@@ -96,11 +97,11 @@ services:
 
 secrets:
   influxdb2-admin-username:
-    file: /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/.env.influxdb2-admin-username
+    file: ./.env.influxdb2-admin-username
   influxdb2-admin-password:
-    file: /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/.env.influxdb2-admin-password
+    file: ./.env.influxdb2-admin-password
   influxdb2-admin-token:
-    file: /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/.env.influxdb2-admin-token
+    file: ./.env.influxdb2-admin-token
 
 volumes:
   vol-emqx-data:
