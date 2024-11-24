@@ -1,0 +1,117 @@
+services:
+  emqx:
+    image: emqx/emqx:5.8.1
+    container_name: emqx1
+      #restart: always
+    ports:
+      - "1883:1883"    # Puerto MQTT
+      - "8883:8883"    # MQTT con TLS
+      - "18083:18083"  # Dashboard de EMQX
+      - "18084:18084" # Dashboard de EMQX con SSL
+    healthcheck:
+      test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]
+      interval: 5s
+      timeout: 25s
+      retries: 5
+    environment:
+      EMQX_NODE__NAME: bugny_emqx@127.0.0.1
+    volumes:
+      - vol-emqx-data:/opt/emqx/data
+      - vol-emqx-log:/opt/emqx/log
+      - /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/emqx/emqx.conf:/opt/emqx/etc/emqx.conf
+      - /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/conf/certs/ca-mac.crt:/opt/emqx/etc/certs/ca-mac.crt
+      - /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/conf/certs/server-mac.crt:/opt/emqx/etc/certs/server-mac.crt
+      - /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/conf/certs/server-mac.key:/opt/emqx/etc/certs/server-mac.key
+
+    networks:
+      emqx-bridge:
+        aliases:
+        - emqx_host
+
+  mariadb:
+    container_name: mariadb-emqx
+    image: mariadb:11.6.1-rc
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+    ports:
+      - "4000:3306"
+    volumes:
+      - mariadb:/var/lib/mysql
+      - ./db:/docker-entrypoint-initdb.d
+    networks:
+      emqx-bridge:
+        aliases:
+        - mariadb_host
+
+  phpmyadmin:
+    depends_on:
+      - mariadb
+    container_name: phpmyadmin
+    image: phpmyadmin:5.2.1-apache
+    restart: always
+    ports:
+      - "4001:80"
+    environment:
+      PMA_HOST: mariadb_host
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    networks:
+      emqx-bridge:
+        aliases:
+          - phpmyadmin_host
+
+  influxdb2:
+    image: influxdb:2.7
+    container_name: influxdb2
+    depends_on:
+      - emqx
+    ports:
+      - 8086:8086
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME_FILE: /run/secrets/influxdb2-admin-username
+      DOCKER_INFLUXDB_INIT_PASSWORD_FILE: /run/secrets/influxdb2-admin-password
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE: /run/secrets/influxdb2-admin-token
+      DOCKER_INFLUXDB_INIT_ORG: docs
+      DOCKER_INFLUXDB_INIT_BUCKET: home
+    secrets:
+      - influxdb2-admin-username
+      - influxdb2-admin-password
+      - influxdb2-admin-token
+    volumes:
+      - type: volume
+        source: influxdb2-data
+        target: /var/lib/influxdb2
+      - type: volume
+        source: influxdb2-config
+        target: /etc/influxdb2
+    networks:
+      emqx-bridge:
+        aliases:
+          - influxdb2_host
+
+secrets:
+  influxdb2-admin-username:
+    file: /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/.env.influxdb2-admin-username
+  influxdb2-admin-password:
+    file: /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/.env.influxdb2-admin-password
+  influxdb2-admin-token:
+    file: /Users/vcornejo/Documents/IIoT/proxy-ua-mqtt/.env.influxdb2-admin-token
+
+volumes:
+  vol-emqx-data:
+    name: foo-emqx-data
+  vol-emqx-log:
+    name: foo-emqx-log
+  mariadb:
+    driver: local
+  influxdb2-data:
+  influxdb2-config:
+
+networks:
+  emqx-bridge:
+    driver: bridge

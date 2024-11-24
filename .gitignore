@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.mypy_cache/
+
+# Environment Variables
+.env
+.env.*
+
+# Logs
+*.log
+
+# Virtual Environment
+venv/
+.env/
+
+# IDEs and Editors
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+
+# EMQX
+cert/
+conf/
+data/
+gen_cert_mqtt.sh
+log/
+opcua/
